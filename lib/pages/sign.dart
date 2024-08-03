@@ -129,7 +129,7 @@ class _SignInUpState extends State<SignInUp> {
               const SizedBox(height: 20.0),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  fixedSize: const Size(250, 50),
+                  minimumSize: const Size(double.infinity, 40),
                   backgroundColor: Colors.black,
                 ),
                 onPressed: () {
