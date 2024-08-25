@@ -1,6 +1,8 @@
 // Control Page
 import 'package:flutter/material.dart';
 import 'package:passtrackdash/colors.dart';
+import 'package:passtrackdash/pages/feed.dart';
+import 'package:passtrackdash/pages/generatereport.dart';
 import 'package:passtrackdash/pages/help.dart';
 import 'package:passtrackdash/pages/notifications.dart';
 import 'package:passtrackdash/pages/profile.dart';
@@ -13,6 +15,7 @@ import 'ticketmanagement.dart';
 import 'qrcode.dart';
 import 'settings.dart';
 import '../components/auth.dart';
+import 'promotions.dart';
 
 class ControlPage extends StatefulWidget {
   const ControlPage({super.key});
@@ -21,7 +24,7 @@ class ControlPage extends StatefulWidget {
 }
 
 class _ControlPageState extends State<ControlPage> {
-  String imgSample = "assets/images/imgSample.png";
+  String imgSample = "assets/images/volicon.png";
   String _title = "Home";
   static int _pageIndex = 0;
 
@@ -50,7 +53,18 @@ class _ControlPageState extends State<ControlPage> {
         backgroundColor: mcgpalette0[50],
         title: Text(_title),
         actions: [
-         
+          IconButton(
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const FeedPage()));
+              },
+              icon: const Icon(Icons.bookmark_add_outlined)),
+          IconButton(
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const PromotionsPage()));
+              },
+              icon: const Icon(Icons.discount_outlined)),
           IconButton(
               onPressed: () {
                 Navigator.push(
@@ -87,40 +101,50 @@ class _ControlPageState extends State<ControlPage> {
                           leading: SizedBox(
                             height: 40,
                             width: 40,
-                            child: Image.network(
-                                "${FirebaseAuth.instance.currentUser!.photoURL}",
-                                ),
+                            child: Image.asset(imgSample),
                           ),
-                          title: Text(
-                            //"Didier Codeseal",
-                            "${FirebaseAuth.instance.currentUser!.displayName}",
-                            style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: mcgpalette0),
+                          title: StreamBuilder<User?>(
+                            stream: FirebaseAuth.instance.authStateChanges(),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData && snapshot.data != null) {
+                                // User is logged in
+                                return SizedBox(
+                                  width: 70,
+                                  child: Text(
+                                    snapshot.data!.email ?? "User",
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: mcgpalette0,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              } else {
+                                // User is not logged in
+                                return const Text(
+                                  "Guest User",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: mcgpalette0,
+                                  ),
+                                );
+                              }
+                            },
                           ),
-                          subtitle: const Text(
-                            "Active Now"
-                            /*
-                            FirebaseAuth.instance.currentUser != null
-                                ? "Active Now"
-                                : "Logged Out" */
-                            ,
-                            style: TextStyle(color: Colors.grey, fontSize: 10),
+                          subtitle: StreamBuilder<User?>(
+                            stream: FirebaseAuth.instance.authStateChanges(),
+                            builder: (context, snapshot) {
+                              return Text(
+                                snapshot.hasData ? "Active Now" : "Logged Out",
+                                style: const TextStyle(
+                                    color: Colors.grey, fontSize: 10),
+                              );
+                            },
                           ),
-                          //trailing: const Icon(Icons.cancel_outlined),
                           onTap: () {
-                            /*
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => ControlPage(
-                                        customIndex:
-                                            FirebaseAuth.instance.currentUser ==
-                                                    null
-                                                ? 3
-                                                : 0,
-                                      )),
-                            ); */
+                            // Your onTap logic here
                           },
                         ),
                       ]),
@@ -128,14 +152,11 @@ class _ControlPageState extends State<ControlPage> {
               ),
               ListTile(
                 onTap: () {
-                  /*
+                  
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const CartPage(
-                              name: "Cart List",
-                              imgUrl: "Cart item from list",
-                              price: "State Management - GetX"))); */
+                          builder: (_) => const GenerateReportPage()));
                 },
                 leading: const Icon(Icons.download_outlined),
                 title: const Text("Generate Reports"), // Order History
@@ -227,12 +248,13 @@ class _ControlPageState extends State<ControlPage> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: "Home"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined), label: "Home"),
           BottomNavigationBarItem(
               icon: Icon(Icons.add_box_outlined), label: "Tickets"),
+          BottomNavigationBarItem(icon: Icon(Icons.qr_code), label: "QR Code"),
           BottomNavigationBarItem(
-              icon: Icon(Icons.qr_code), label: "QR Code"),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: "Profile"),
+              icon: Icon(Icons.person_outline), label: "Profile"),
         ],
         onTap: (int index) {
           _pageController.animateToPage(index,

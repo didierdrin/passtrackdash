@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:passtrackdash/colors.dart';
-//import 'package:passtrackdash/pages/control.dart';
-import '../components/auth.dart';
+import 'package:logger/logger.dart';
+import 'package:passtrackdash/components/auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class SignInUp extends StatefulWidget {
@@ -11,12 +12,49 @@ class SignInUp extends StatefulWidget {
   State<SignInUp> createState() => _SignInUpState();
 }
 
-class _SignInUpState extends State<SignInUp> { 
-  final String google = "assets/images/google.svg";
+class _SignInUpState extends State<SignInUp> {
+  final google = "assets/images/google.svg";
+
+  final logger = Logger();
   final _formKey = GlobalKey<FormState>();
   String _email = '';
   String _password = '';
+  String _phoneNumber = '';
   bool _isSignUp = false;
+
+  final AuthService _authService = AuthService();
+
+  void _handleSignInOrSignUp() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+
+      UserCredential? result;
+      if (_isSignUp) {
+        if (_email.isNotEmpty) {
+          result = await _authService.createUserWithEmail(_email, _password);
+        } else if (_phoneNumber.isNotEmpty) {
+          result = await _authService.signInWithPhone(_phoneNumber);
+        }
+      } else {
+        if (_email.isNotEmpty) {
+          result = await _authService.signInWithEmail(_email, _password);
+        } else if (_phoneNumber.isNotEmpty) {
+          result = await _authService.signInWithPhone(_phoneNumber);
+        }
+      }
+
+      if (result != null) {
+        Navigator.of(context)
+            .pop(true); // Return true to indicate successful login
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Authentication failed. Please try again.')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +113,13 @@ class _SignInUpState extends State<SignInUp> {
                   }
                   return null;
                 },
-                onSaved: (value) => _email = value!,
+                onSaved: (value) {
+                  if (type == 'phone') {
+                    _phoneNumber = value!;
+                  } else {
+                    _email = value!;
+                  }
+                },
               ),
               const SizedBox(height: 20.0),
               TextFormField(
@@ -117,11 +161,7 @@ class _SignInUpState extends State<SignInUp> {
                     backgroundColor: mcgpalette0[50],
                     minimumSize: const Size(double.infinity, 40)),
                 onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    _formKey.currentState!.save();
-                    print(
-                        '${_isSignUp ? "Sign Up" : "Sign In"}: $_email, Password: $_password');
-                  }
+                  _handleSignInOrSignUp();
                 },
                 child: Text(_isSignUp ? 'Sign Up' : 'Sign In',
                     style: const TextStyle(color: Colors.white)),
@@ -160,7 +200,7 @@ class _SignInUpState extends State<SignInUp> {
                 const SizedBox(height: 20.0),
                 TextButton(
                   onPressed: () {
-                    print('Forgot password clicked');
+                    logger.d('Forgot password clicked');
                   },
                   child: const Text('Forgot password?',
                       style: TextStyle(color: Colors.blue)),

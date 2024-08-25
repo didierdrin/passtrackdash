@@ -15,14 +15,14 @@ class SettingsPage extends StatelessWidget {
         children: const [
           // System Configuration Section
           ExpansionTile(
-            title: Text('System Configuration'),
+            title: Text('App Configuration'),
             children: [
               ListTile(
-                title: Text('Option 1'),
+                title: Text('Light/Dark Mode'),
                 // Add functionality here
               ),
               ListTile(
-                title: Text('Option 2'),
+                title: Text('Notifications'),
                 // Add functionality here
               ),
             ],
@@ -30,14 +30,14 @@ class SettingsPage extends StatelessWidget {
 
           // App Preferences Section
           ExpansionTile(
-            title: Text('App Preferences'),
+            title: Text('My Account'),
             children: [
               ListTile(
-                title: Text('Preference 1'),
+                title: Text('Profile'),
                 // Add functionality here
               ),
               ListTile(
-                title: Text('Preference 2'),
+                title: Text('System users'),
                 // Add functionality here
               ),
             ],

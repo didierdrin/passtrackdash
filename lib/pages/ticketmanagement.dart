@@ -11,6 +11,8 @@ class Ticket {
   final String routeFrom;
   final String routeTo;
   final Timestamp timeCreated;
+  final Timestamp departureTimestamp;
+  final bool expired;
 
   Ticket({
     required this.id,
@@ -21,6 +23,8 @@ class Ticket {
     required this.routeFrom,
     required this.routeTo,
     required this.timeCreated,
+    required this.departureTimestamp,
+    required this.expired,
   });
 
   factory Ticket.fromFirestore(DocumentSnapshot doc) {
@@ -34,6 +38,8 @@ class Ticket {
       routeFrom: data['route_from'] ?? '',
       routeTo: data['route_to'] ?? '',
       timeCreated: data['time_created'] ?? Timestamp.now(),
+      departureTimestamp: data['departure_timestamp'] ?? Timestamp.now(),
+      expired: data['expired'] ?? false,
     );
   }
 }
@@ -125,6 +131,10 @@ class _TicketManagementPageState extends State<TicketManagementPage> {
   }
 
   Widget _ticketCard(Ticket ticket) {
+    if (ticket.expired) {
+      return Container(); // Hide expired tickets
+    }
+
     return InkWell(
       onTap: () {
         _showTicketDetails(ticket);
@@ -148,9 +158,9 @@ class _TicketManagementPageState extends State<TicketManagementPage> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 15),
-                    _routeInfo("From", ticket.routeFrom, ticket.timeCreated.toDate().toString()),
+                    _routeInfo("From", ticket.routeFrom, ticket.departureTimestamp.toDate().toString()),
                     const SizedBox(height: 10),
-                    _routeInfo("To", ticket.routeTo, ticket.timeCreated.toDate().toString()),
+                    _routeInfo("To", ticket.routeTo, ticket.departureTimestamp.toDate().toString()),
                   ],
                 ),
                 const SizedBox(width: 5),
@@ -164,7 +174,7 @@ class _TicketManagementPageState extends State<TicketManagementPage> {
                 Column(
                   children: [
                     const SizedBox(height: 20),
-                    Text("${ticket.timeCreated.toDate().hour}:${ticket.timeCreated.toDate().minute}"),
+                    Text("${ticket.departureTimestamp.toDate().hour}:${ticket.departureTimestamp.toDate().minute}"),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         fixedSize: const Size(90, 10),
@@ -252,51 +262,106 @@ class _TicketManagementPageState extends State<TicketManagementPage> {
     final TextEditingController routeFromController = TextEditingController(text: ticket?.routeFrom);
     final TextEditingController routeToController = TextEditingController(text: ticket?.routeTo);
     final TextEditingController priceController = TextEditingController(text: ticket?.price.toString());
+    DateTime selectedDate = ticket?.departureTimestamp.toDate() ?? DateTime.now();
+    TimeOfDay selectedTime = TimeOfDay.fromDateTime(selectedDate);
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text(ticket == null ? 'Create Ticket' : 'Edit Ticket'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: busNameController, decoration: const InputDecoration(labelText: 'Bus Name')),
-                TextField(controller: routeFromController, decoration: const InputDecoration(labelText: 'From')),
-                TextField(controller: routeToController, decoration: const InputDecoration(labelText: 'To')),
-                TextField(controller: priceController, decoration: const InputDecoration(labelText: 'Price')),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(ticket == null ? 'Create Ticket' : 'Edit Ticket'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(controller: busNameController, decoration: const InputDecoration(labelText: 'Bus Name')),
+                    TextField(controller: routeFromController, decoration: const InputDecoration(labelText: 'From')),
+                    TextField(controller: routeToController, decoration: const InputDecoration(labelText: 'To')),
+                    TextField(controller: priceController, decoration: const InputDecoration(labelText: 'Price')),
+                    ListTile(
+                      title: const Text('Departure Date'),
+                      subtitle: Text("${selectedDate.toLocal()}".split(' ')[0]),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2101),
+                        );
+                        if (picked != null && picked != selectedDate) {
+                          setState(() {
+                            selectedDate = DateTime(
+                              picked.year,
+                              picked.month,
+                              picked.day,
+                              selectedTime.hour,
+                              selectedTime.minute,
+                            );
+                          });
+                        }
+                      },
+                    ),
+                    ListTile(
+                      title: const Text('Departure Time'),
+                      subtitle: Text(selectedTime.format(context)),
+                      trailing: const Icon(Icons.access_time),
+                      onTap: () async {
+                        final TimeOfDay? picked = await showTimePicker(
+                          context: context,
+                          initialTime: selectedTime,
+                        );
+                        if (picked != null && picked != selectedTime) {
+                          setState(() {
+                            selectedTime = picked;
+                            selectedDate = DateTime(
+                              selectedDate.year,
+                              selectedDate.month,
+                              selectedDate.day,
+                              selectedTime.hour,
+                              selectedTime.minute,
+                            );
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    final data = {
+                      'bus_name': busNameController.text,
+                      'route_from': routeFromController.text,
+                      'route_to': routeToController.text,
+                      'price': double.parse(priceController.text),
+                      'from': const GeoPoint(0, 0), // You need to implement a way to input GeoPoint
+                      'to': const GeoPoint(0, 0), // You need to implement a way to input GeoPoint
+                      'time_created': Timestamp.now(),
+                      'departure_timestamp': Timestamp.fromDate(selectedDate),
+                      'expired': false,
+                    };
+
+                    if (ticket == null) {
+                      _firestore.collection('tickets').add(data);
+                    } else {
+                      _firestore.collection('tickets').doc(ticket.id).update(data);
+                    }
+
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(ticket == null ? 'Create' : 'Update'),
+                ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                final data = {
-                  'bus_name': busNameController.text,
-                  'route_from': routeFromController.text,
-                  'route_to': routeToController.text,
-                  'price': double.parse(priceController.text),
-                  'from': const GeoPoint(0, 0), // You need to implement a way to input GeoPoint
-                  'to': const GeoPoint(0, 0), // You need to implement a way to input GeoPoint
-                  'time_created': Timestamp.now(),
-                };
-
-                if (ticket == null) {
-                  _firestore.collection('tickets').add(data);
-                } else {
-                  _firestore.collection('tickets').doc(ticket.id).update(data);
-                }
-
-                Navigator.of(context).pop();
-              },
-              child: Text(ticket == null ? 'Create' : 'Update'),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -316,7 +381,8 @@ class _TicketManagementPageState extends State<TicketManagementPage> {
               Text('From: ${ticket.routeFrom}'),
               Text('To: ${ticket.routeTo}'),
               Text('Price: RWF${ticket.price.toStringAsFixed(2)}'),
-              Text('Date: ${DateFormat('yyyy-MM-dd HH:mm').format(ticket.timeCreated.toDate())}'),
+              Text('Departure: ${DateFormat('yyyy-MM-dd HH:mm').format(ticket.departureTimestamp.toDate())}'),
+              Text('Expired: ${ticket.expired}'),
             ],
           ),
           actions: [
@@ -344,6 +410,7 @@ class _TicketManagementPageState extends State<TicketManagementPage> {
     );
   }
 }
+
 
 class DottedLine extends StatelessWidget {
   final double lineLength;

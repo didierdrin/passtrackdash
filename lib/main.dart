@@ -4,13 +4,20 @@ import 'package:passtrackdash/components/auth.dart';
 //import 'package:passtrackdash/pages/sign.dart';
 import 'package:passtrackdash/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+import 'package:passtrackdash/components/summary_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => SummaryProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
