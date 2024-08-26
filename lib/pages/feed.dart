@@ -152,6 +152,7 @@ class _FeedPageState extends State<FeedPage> {
           return AlertDialog(
             title: Text(post == null ? 'Create Post' : 'Edit Post'),
             content: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -226,18 +227,21 @@ class _FeedPageState extends State<FeedPage> {
       builder: (context) {
         return AlertDialog(
           title: Text(post.title),
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.network(post.imgUrl, height: 200, width: double.infinity, fit: BoxFit.cover),
-              const SizedBox(height: 10),
-              Text(post.subtitle, style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              Text(post.description),
-              const SizedBox(height: 10),
-              Text('Date: ${DateFormat('yyyy-MM-dd HH:mm').format(post.timestamp.toDate())}'),
-            ],
+          content: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.network(post.imgUrl, height: 200, width: double.infinity, fit: BoxFit.cover),
+                const SizedBox(height: 10),
+                Text(post.subtitle, style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                Text(post.description),
+                const SizedBox(height: 10),
+                Text('Date: ${DateFormat('yyyy-MM-dd HH:mm').format(post.timestamp.toDate())}'),
+              ],
+            ),
           ),
           actions: [
             TextButton(

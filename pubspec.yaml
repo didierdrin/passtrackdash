@@ -52,6 +52,15 @@ dependencies:
   provider: ^6.1.2
   pdf: ^3.11.1
   printing: ^5.13.2
+  flutter_native_splash: ^2.4.1
+
+flutter_native_splash:
+  android: true 
+  ios: true 
+  web: false 
+  color: "#243665" 
+  image: "assets/images/volicon.png"
+
  
 dev_dependencies:
   flutter_test:
